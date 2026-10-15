@@ -59,6 +59,22 @@ export class App {
     } else {
       this.settings.strokeColor = '#e2e8f0';
     }
+    if (!/^#[0-9a-f]{6}$/i.test(this.settings.strokeColor)) {
+      this.settings.strokeColor = savedTheme === 'light' ? '#1e293b' : '#e2e8f0';
+    }
+    if (
+      this.settings.fillColor !== 'transparent' &&
+      !/^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/i.test(this.settings.fillColor)
+    ) {
+      this.settings.fillColor = 'transparent';
+    }
+    if (!Number.isFinite(this.settings.strokeWidth) || this.settings.strokeWidth <= 0) {
+      this.settings.strokeWidth = 2;
+    }
+    if (!Number.isFinite(this.settings.opacity)) {
+      this.settings.opacity = 1;
+    }
+    this.settings.opacity = clamp(this.settings.opacity, 0, 1);
 
     // 3. Set up canvas and renderer
     this.canvas = document.getElementById('canvas');
@@ -378,9 +394,11 @@ export class App {
 
     if (strokePicker) {
       strokePicker.value = this.settings.strokeColor;
-      strokePicker.addEventListener('input', (e) => {
+      const applyStrokeColor = (e) => {
         this.setStrokeColor(e.target.value);
-      });
+      };
+      strokePicker.addEventListener('input', applyStrokeColor);
+      strokePicker.addEventListener('change', applyStrokeColor);
     }
 
     // Stroke swatches
@@ -398,9 +416,11 @@ export class App {
 
     if (fillPicker) {
       fillPicker.value = this.settings.fillColor === 'transparent' ? '#3b82f6' : this.settings.fillColor.slice(0, 7);
-      fillPicker.addEventListener('input', (e) => {
+      const applyFillColor = (e) => {
         this.setFillColor(e.target.value);
-      });
+      };
+      fillPicker.addEventListener('input', applyFillColor);
+      fillPicker.addEventListener('change', applyFillColor);
     }
 
     // Fill transparent toggle
@@ -452,6 +472,7 @@ export class App {
   }
 
   setStrokeColor(color) {
+    if (typeof color !== 'string' || !/^#[0-9a-f]{6}$/i.test(color)) return;
     this.settings.strokeColor = color;
     const strokePicker = document.getElementById('stroke-color-picker') || document.getElementById('stroke-color');
     const strokeIndicator = document.getElementById('stroke-color-indicator');
@@ -468,6 +489,9 @@ export class App {
   }
 
   setFillColor(color) {
+    if (typeof color !== 'string' || (color !== 'transparent' && !/^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/i.test(color))) {
+      return;
+    }
     this.settings.fillColor = color;
     const fillPicker = document.getElementById('fill-color-picker') || document.getElementById('fill-color');
     const fillIndicator = document.getElementById('fill-color-indicator');
@@ -497,6 +521,7 @@ export class App {
   _updateSelectedElementsStyle(props) {
     if (this.toolManager.selectedIds.size > 0) {
       let changed = false;
+      this.history.push(this.elements);
       for (const id of this.toolManager.selectedIds) {
         const el = this.elements.find(e => e.id === id);
         if (el) {
@@ -506,6 +531,9 @@ export class App {
       }
       if (changed) {
         this.dirty = true;
+        this.saveState();
+      } else {
+        this.history.undoStack.pop();
       }
     }
   }
