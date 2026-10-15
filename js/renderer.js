@@ -622,13 +622,13 @@ export class Renderer {
     if (!el.text) return;
 
     this.ctx.save();
-    const fontSize = 16;
+    const fontSize = el.fontSize || 20;
     const lineHeight = fontSize * 1.35;
-    this.ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif`;
+    this.ctx.font = `${fontSize}px 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
     this.ctx.textBaseline = 'top';
 
-    const padding = 6;
-    const maxWidth = Math.max(20, el.width - padding * 2);
+    const padding = 8;
+    const maxWidth = Math.max(20, (el.width || 200) - padding * 2);
 
     // Break lines by \n and wrap words
     const rawLines = el.text.split('\n');
@@ -660,13 +660,10 @@ export class Renderer {
     }
 
     // Text rendering
-    this.ctx.fillStyle = el.strokeColor || '#1e1e1e';
+    const isDark = this.theme === 'dark';
+    this.ctx.fillStyle = el.strokeColor || (isDark ? '#f8fafc' : '#1e1e1e');
     for (let i = 0; i < wrappedLines.length; i++) {
       const lineY = el.y + padding + i * lineHeight;
-      if (lineY + lineHeight > el.y + el.height + padding * 2) {
-        // Stop if exceeding height bounds
-        break;
-      }
       this.ctx.fillText(wrappedLines[i], el.x + padding, lineY);
     }
 
@@ -704,9 +701,9 @@ export class Renderer {
     // 4. Note text
     if (el.text) {
       const padding = 12;
-      const fontSize = 15;
+      const fontSize = el.fontSize || 18;
       const lineHeight = fontSize * 1.35;
-      this.ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+      this.ctx.font = `${fontSize}px 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
       this.ctx.fillStyle = el.strokeColor || '#1e293b';
       this.ctx.textBaseline = 'top';
 

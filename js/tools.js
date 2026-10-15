@@ -631,26 +631,32 @@ export class ToolManager {
     const camera = this.app.renderer.camera;
     const screen = worldToScreen(element.x, element.y, camera);
 
+    const isSticky = element.type === 'stickynote';
+    const baseFontSize = element.fontSize || (isSticky ? 18 : 20);
+    const scaledFontSize = baseFontSize * camera.zoom;
+    const padding = (isSticky ? 12 : 8) * camera.zoom;
+    const lineHeight = 1.35;
+
     const overlay = document.createElement('div');
     overlay.contentEditable = 'true';
     overlay.className = 'text-edit-overlay';
     overlay.style.position = 'fixed';
     overlay.style.left = `${screen.x}px`;
     overlay.style.top = `${screen.y}px`;
-    overlay.style.minWidth = `${element.width * camera.zoom}px`;
-    overlay.style.minHeight = `${element.height * camera.zoom}px`;
-    overlay.style.fontSize = `${(element.type === 'stickynote' ? 16 : 20) * camera.zoom}px`;
-    overlay.style.fontFamily = "'Segoe UI', system-ui, -apple-system, sans-serif";
-    overlay.style.color = element.type === 'stickynote' ? '#333' : (document.documentElement.dataset.theme === 'dark' ? '#fff' : '#333');
-    overlay.style.background = element.type === 'stickynote' ? element.fillColor : 'transparent';
+    overlay.style.minWidth = `${Math.max(60, (element.width || 60) * camera.zoom)}px`;
+    overlay.style.minHeight = `${Math.max(30, (element.height || 30) * camera.zoom)}px`;
+    overlay.style.fontSize = `${scaledFontSize}px`;
+    overlay.style.fontFamily = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    overlay.style.color = isSticky ? '#1e293b' : (element.strokeColor || (document.documentElement.dataset.theme === 'dark' ? '#f8fafc' : '#1e1e1e'));
+    overlay.style.background = isSticky ? (element.fillColor || '#fef08a') : 'transparent';
     overlay.style.border = 'none';
-    overlay.style.outline = '2px solid var(--accent, #4f8cff)';
-    overlay.style.borderRadius = element.type === 'stickynote' ? '4px' : '2px';
-    overlay.style.padding = element.type === 'stickynote' ? '12px' : '4px';
+    overlay.style.outline = '2px solid var(--accent, #3b82f6)';
+    overlay.style.borderRadius = isSticky ? '4px' : '2px';
+    overlay.style.padding = `${padding}px`;
     overlay.style.zIndex = '50';
     overlay.style.whiteSpace = 'pre-wrap';
     overlay.style.wordBreak = 'break-word';
-    overlay.style.lineHeight = '1.4';
+    overlay.style.lineHeight = `${lineHeight}`;
     overlay.style.boxSizing = 'border-box';
     overlay.innerText = element.text || '';
 
@@ -682,17 +688,26 @@ export class ToolManager {
 
     const text = this.editOverlay.innerText.trim();
     const el = this.editingElement;
+    const camera = this.app.renderer.camera;
 
     if (text) {
       el.text = text;
-      // Estimate text dimensions
-      const lines = text.split('\n');
-      const fontSize = el.type === 'stickynote' ? 16 : 20;
-      el.height = Math.max(el.height, lines.length * fontSize * 1.4 + 8);
-      const maxLineLen = Math.max(...lines.map(l => l.length));
-      if (el.type !== 'stickynote') {
-        el.width = Math.max(el.width, maxLineLen * fontSize * 0.6 + 8);
+      const isSticky = el.type === 'stickynote';
+      const baseFontSize = el.fontSize || (isSticky ? 18 : 20);
+      el.fontSize = baseFontSize;
+
+      // Measure dimensions accurately from overlay
+      const measuredWidth = this.editOverlay.offsetWidth / camera.zoom;
+      const measuredHeight = this.editOverlay.offsetHeight / camera.zoom;
+
+      if (!isSticky) {
+        el.width = Math.max(40, measuredWidth);
+        el.height = Math.max(baseFontSize * 1.35 + 16, measuredHeight);
+      } else {
+        el.width = Math.max(160, el.width || 160);
+        el.height = Math.max(160, measuredHeight, el.height || 160);
       }
+
       el.updatedAt = Date.now();
       this.app.history.push(this.app.elements);
       this.app.saveState();
@@ -722,6 +737,7 @@ export class ToolManager {
       height: 0,
       points: [],
       text: '',
+      fontSize: type === 'stickynote' ? 18 : 20,
       strokeColor: s.strokeColor,
       fillColor: s.fillColor,
       strokeWidth: s.strokeWidth,
