@@ -1,0 +1,11 @@
+{
+  "name": "fleck",
+  "version": "1.0.0",
+  "description": "A fast, drawing-first note-taking web app with infinite canvas.",
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve ."
+  },
+  "keywords": ["drawing", "notes", "canvas", "excalidraw", "pwa"],
+  "license": "MIT"
+}
