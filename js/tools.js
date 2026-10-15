@@ -303,7 +303,7 @@ export class ToolManager {
               startY: world.y,
               originalBounds: { x: el.x, y: el.y, width: el.width, height: el.height }
             };
-            this.app.history.push(this.app.elements);
+            this.resizeInitialElements = this.app.elements.map(e => structuredClone(e));
             return;
           }
         }
@@ -324,14 +324,14 @@ export class ToolManager {
         this.selectedIds.add(el.id);
       }
 
-      // Start dragging
+      // Prepare for potential dragging without prematurely pushing history
       const offsets = new Map();
       for (const id of this.selectedIds) {
         const selEl = this.app.elements.find(e => e.id === id);
         if (selEl) offsets.set(id, { dx: selEl.x - world.x, dy: selEl.y - world.y });
       }
       this.dragState = { startX: world.x, startY: world.y, elementOffsets: offsets };
-      this.app.history.push(this.app.elements);
+      this.dragInitialElements = this.app.elements.map(e => structuredClone(e));
     } else {
       if (!shiftKey) this.selectedIds.clear();
       this.selectionRect = { x: world.x, y: world.y, width: 0, height: 0 };
@@ -389,11 +389,20 @@ export class ToolManager {
 
   _selectUp(world) {
     if (this.resizeState) {
+      const moved = distance(this.startPoint, world) > 2;
+      if (moved && this.resizeInitialElements) {
+        this.app.history.push(this.resizeInitialElements);
+        this.app.saveState();
+      }
+      this.resizeInitialElements = null;
       this.resizeState = null;
-      this.app.saveState();
     } else if (this.dragState) {
       const moved = distance(this.startPoint, world) > 2;
-      if (moved) this.app.saveState();
+      if (moved && this.dragInitialElements) {
+        this.app.history.push(this.dragInitialElements);
+        this.app.saveState();
+      }
+      this.dragInitialElements = null;
       this.dragState = null;
     } else if (this.selectionRect) {
       const sr = this.selectionRect;
@@ -597,7 +606,8 @@ export class ToolManager {
   // ─── ERASER TOOL ──────────────────────────────────────────
 
   _eraserDown(world) {
-    this.app.history.push(this.app.elements);
+    this.eraserInitialElements = this.app.elements.map(e => structuredClone(e));
+    this.erasedAny = false;
     this._eraseAt(world);
   }
 
@@ -606,7 +616,12 @@ export class ToolManager {
   }
 
   _eraserUp() {
-    this.app.saveState();
+    if (this.erasedAny && this.eraserInitialElements) {
+      this.app.history.push(this.eraserInitialElements);
+      this.app.saveState();
+    }
+    this.erasedAny = false;
+    this.eraserInitialElements = null;
   }
 
   _eraseAt(world) {
@@ -617,6 +632,7 @@ export class ToolManager {
       }
     }
     if (toRemove.length > 0) {
+      this.erasedAny = true;
       for (const id of toRemove) this.app.removeElement(id);
       this.app.dirty = true;
     }
