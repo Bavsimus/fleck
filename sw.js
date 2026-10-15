@@ -1,8 +1,8 @@
 // Service Worker for Fleck - Complete offline capability
-const CACHE_NAME = 'fleck-v8';
+const CACHE_NAME = 'fleck-v9';
+const APP_SHELL = './';
 const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
+  APP_SHELL,
   './manifest.json',
   './icon.svg',
   './css/style.css',
@@ -14,10 +14,33 @@ const ASSETS_TO_CACHE = [
   './js/app.js'
 ];
 
+// Chrome refuses to use a redirected response for a navigation (ERR_FAILED).
+// Vercel's cleanUrls redirects /index.html -> /, so strip the redirect flag.
+async function cleanResponse(response) {
+  if (!response || !response.redirected) return response;
+  const body = await response.blob();
+  return new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers
+  });
+}
+
+function isCacheable(response) {
+  return response && response.status === 200 && response.type === 'basic';
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await Promise.all(ASSETS_TO_CACHE.map(async (url) => {
+        try {
+          const response = await fetch(url, { cache: 'reload' });
+          if (isCacheable(response)) await cache.put(url, await cleanResponse(response));
+        } catch (_) {
+          // One missing asset must not block installation.
+        }
+      }));
     }).then(() => self.skipWaiting())
   );
 });
@@ -43,15 +66,33 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Stale-while-revalidate: instant from cache, refreshed in the background so
-  // the next launch picks up new versions without bumping CACHE_NAME by hand.
+  // Page loads (/, /index.html, any path): network first so deploys show up,
+  // falling back to the cached app shell when offline.
+  if (request.mode === 'navigate') {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      try {
+        const response = await cleanResponse(await fetch(request));
+        if (isCacheable(response)) cache.put(APP_SHELL, response.clone());
+        if (response.ok) return response;
+      } catch (_) {
+        // offline
+      }
+      return (await cache.match(APP_SHELL)) || Response.error();
+    })());
+    return;
+  }
+
+  // Static assets: stale-while-revalidate.
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
       const cached = await cache.match(request, { ignoreSearch: true });
       const network = fetch(request)
-        .then((response) => {
-          if (response && response.status === 200 && response.type === 'basic') {
-            cache.put(request, response.clone());
+        .then(async (response) => {
+          if (isCacheable(response)) {
+            const clean = await cleanResponse(response);
+            cache.put(request, clean.clone());
+            return clean;
           }
           return response;
         })
@@ -62,10 +103,7 @@ self.addEventListener('fetch', (event) => {
         return cached;
       }
 
-      const response = await network;
-      if (response) return response;
-      if (request.mode === 'navigate') return cache.match('./index.html');
-      return Response.error();
+      return (await network) || Response.error();
     })
   );
 });

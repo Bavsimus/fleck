@@ -3,7 +3,7 @@
   "name": "Fleck — Visual Notes & Sketchpad",
   "short_name": "Fleck",
   "description": "Drawing-first visual notes and infinite canvas sketchpad similar to Excalidraw.",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
