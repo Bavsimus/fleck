@@ -45,7 +45,8 @@ export class Renderer {
 
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
+    this.dpr = Renderer._getDpr();
+    this._wrapCache = new WeakMap();
 
     // Camera view state
     this.camera = { x: 0, y: 0, zoom: 1 };
@@ -61,6 +62,11 @@ export class Renderer {
     this.resize();
   }
 
+  // Cap the backing-store scale: 3x/4x displays multiply fill cost for no visible gain on a sketchpad.
+  static _getDpr() {
+    return typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+  }
+
   /**
    * Resize canvas backing store to match layout size with devicePixelRatio scaling.
    */
@@ -69,9 +75,12 @@ export class Renderer {
     const width = rect.width || this.canvas.clientWidth || 800;
     const height = rect.height || this.canvas.clientHeight || 600;
 
-    this.dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
-    this.canvas.width = Math.round(width * this.dpr);
-    this.canvas.height = Math.round(height * this.dpr);
+    this.dpr = Renderer._getDpr();
+    const pxW = Math.round(width * this.dpr);
+    const pxH = Math.round(height * this.dpr);
+    // Assigning width/height reallocates the bitmap even when unchanged.
+    if (this.canvas.width !== pxW) this.canvas.width = pxW;
+    if (this.canvas.height !== pxH) this.canvas.height = pxH;
   }
 
   /**
@@ -630,28 +639,7 @@ export class Renderer {
     const padding = 8;
     const maxWidth = Math.max(20, (el.width || 200) - padding * 2);
 
-    // Break lines by \n and wrap words
-    const rawLines = el.text.split('\n');
-    const wrappedLines = [];
-
-    for (const rawLine of rawLines) {
-      const words = rawLine.split(' ');
-      let currentLine = '';
-
-      for (let w = 0; w < words.length; w++) {
-        const word = words[w];
-        const testLine = currentLine ? `${currentLine} ${word}` : word;
-        const testWidth = this.ctx.measureText(testLine).width;
-
-        if (testWidth > maxWidth && currentLine !== '') {
-          wrappedLines.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = testLine;
-        }
-      }
-      wrappedLines.push(currentLine);
-    }
+    const wrappedLines = this._getWrappedLines(el, fontSize, maxWidth);
 
     // Background fill if requested
     if (el.fillColor && el.fillColor !== 'transparent') {
@@ -668,6 +656,36 @@ export class Renderer {
     }
 
     this.ctx.restore();
+  }
+
+  /**
+   * Word-wrap an element's text, memoized per element so measureText is not
+   * re-run for every word on every frame.
+   * @private
+   */
+  _getWrappedLines(el, fontSize, maxWidth) {
+    const cached = this._wrapCache.get(el);
+    if (cached && cached.text === el.text && cached.fontSize === fontSize && cached.maxWidth === maxWidth) {
+      return cached.lines;
+    }
+
+    const lines = [];
+    for (const rawLine of el.text.split('\n')) {
+      let current = '';
+      for (const word of rawLine.split(' ')) {
+        const test = current ? `${current} ${word}` : word;
+        if (current && this.ctx.measureText(test).width > maxWidth) {
+          lines.push(current);
+          current = word;
+        } else {
+          current = test;
+        }
+      }
+      lines.push(current);
+    }
+
+    this._wrapCache.set(el, { text: el.text, fontSize, maxWidth, lines });
+    return lines;
   }
 
   /**
@@ -707,24 +725,7 @@ export class Renderer {
       this.ctx.fillStyle = el.strokeColor || '#1e293b';
       this.ctx.textBaseline = 'top';
 
-      const maxWidth = w - padding * 2;
-      const rawLines = el.text.split('\n');
-      const lines = [];
-
-      for (const rawLine of rawLines) {
-        const words = rawLine.split(' ');
-        let current = '';
-        for (const word of words) {
-          const test = current ? `${current} ${word}` : word;
-          if (this.ctx.measureText(test).width > maxWidth && current) {
-            lines.push(current);
-            current = word;
-          } else {
-            current = test;
-          }
-        }
-        lines.push(current);
-      }
+      const lines = this._getWrappedLines(el, fontSize, w - padding * 2);
 
       for (let i = 0; i < lines.length; i++) {
         const lineY = y + padding + i * lineHeight;

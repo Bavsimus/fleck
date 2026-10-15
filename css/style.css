@@ -32,7 +32,7 @@
   --canvas-bg: #f8fafc;
   --dot-color: #cbd5e1;
   
-  --surface: rgba(255, 255, 255, 0.85);
+  --surface: rgba(255, 255, 255, 0.96);
   --surface-solid: #ffffff;
   --surface-hover: rgba(241, 245, 249, 0.95);
   --surface-active: #3b82f6;
@@ -61,7 +61,7 @@
   --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
   --shadow-lg: 0 12px 28px -4px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.06);
 
-  --glass-blur: blur(14px) saturate(180%);
+  --glass-blur: none;
   --tooltip-bg: #1e293b;
   --tooltip-text: #f8fafc;
   --kbd-bg: rgba(255, 255, 255, 0.2);
@@ -88,7 +88,7 @@ html[data-theme='light'] {
   --bg: #f8fafc;
   --canvas-bg: #f8fafc;
   --dot-color: #cbd5e1;
-  --surface: rgba(255, 255, 255, 0.85);
+  --surface: rgba(255, 255, 255, 0.96);
   --surface-solid: #ffffff;
   --surface-hover: rgba(241, 245, 249, 0.95);
   --surface-active: #3b82f6;
@@ -112,7 +112,7 @@ html[data-theme='dark'] {
   --canvas-bg: #15171a;
   --dot-color: #2b2f38;
   
-  --surface: rgba(24, 26, 32, 0.85);
+  --surface: rgba(24, 26, 32, 0.96);
   --surface-solid: #1e2127;
   --surface-hover: rgba(38, 42, 51, 0.9);
   --surface-active: #3b82f6;
@@ -562,7 +562,7 @@ html[data-theme='dark'] .theme-toggle .icon-moon {
 .left-sidebar {
   position: fixed;
   top: calc(var(--toolbar-height) + 10px);
-  left: 12px;
+  right: 12px;
   width: var(--sidebar-width);
   max-height: calc(100vh - var(--toolbar-height) - 24px);
   z-index: var(--z-sidebar);
@@ -631,15 +631,28 @@ html[data-theme='dark'] .theme-toggle .icon-moon {
   margin: 4px 0;
 }
 
+/* The tool palette is on the right, so shortcut hints open toward the canvas. */
+.left-sidebar [data-tooltip]::after {
+  left: auto;
+  right: 100%;
+  transform: translateY(-50%) translateX(-8px);
+}
+.left-sidebar [data-tooltip]:hover::after {
+  transform: translateY(-50%) translateX(-12px);
+}
+
 /* --------------------------------------------------------------------------
    6. Properties & Style Controls Section
    -------------------------------------------------------------------------- */
 .properties-section {
   position: fixed;
   top: calc(var(--toolbar-height) + 10px);
-  left: 76px;
+  left: 12px;
   z-index: var(--z-sidebar);
   width: 220px;
+  max-height: calc(100vh - var(--toolbar-height) - 24px);
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -652,9 +665,6 @@ html[data-theme='dark'] .theme-toggle .icon-moon {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   animation: propertiesPanelIn 140ms ease-out;
-}
-.properties-section[hidden] {
-  display: none;
 }
 @keyframes propertiesPanelIn {
   from { opacity: 0; transform: translateX(-6px); }
@@ -1416,10 +1426,23 @@ html[data-theme='dark'] .transparent-pattern {
   }
 
   .properties-section {
-    flex-direction: row;
+    top: auto;
+    bottom: 64px;
+    left: 8px;
+    right: 8px;
     width: auto;
-    gap: 10px;
-    padding: 0 4px;
+    max-height: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 12px;
+    padding: 6px 10px;
+    overflow-y: visible;
+  }
+
+  .properties-header,
+  .properties-section .sidebar-divider {
+    display: none;
   }
 
   .property-item {
@@ -1438,7 +1461,7 @@ html[data-theme='dark'] .transparent-pattern {
 
   /* Bottom Panel Relocation Above Bottom Bar */
   .bottom-panel {
-    bottom: 66px;
+    bottom: 140px;
     right: 12px;
   }
 
@@ -1463,5 +1486,36 @@ html[data-theme='dark'] .transparent-pattern {
   /* Hide Tooltips on Touch Devices */
   [data-tooltip]::after {
     display: none !important;
+  }
+}
+
+/* Short windows: the minimap would collide with the tool palette, so hide it. */
+@media (max-height: 720px) {
+  .minimap-card {
+    display: none;
+  }
+}
+
+/* Respect reduced-motion and keep idle GPU work low. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Narrow phones: zoom is done by pinch, so free the toolbar for page + undo/redo. */
+@media (max-width: 560px) {
+  .toolbar-center .zoom-group,
+  .toolbar-center .divider-v,
+  .btn-action .btn-label {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .brand-badge,
+  .toolbar-left > .divider-v {
+    display: none;
   }
 }

@@ -1,5 +1,5 @@
 // Service Worker for Fleck - Complete offline capability
-const CACHE_NAME = 'fleck-v7';
+const CACHE_NAME = 'fleck-v8';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -37,30 +37,35 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Navigation fallback / cache-first for app assets
+  const { request } = event;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  // Stale-while-revalidate: instant from cache, refreshed in the background so
+  // the next launch picks up new versions without bumping CACHE_NAME by hand.
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
+    caches.open(CACHE_NAME).then(async (cache) => {
+      const cached = await cache.match(request, { ignoreSearch: true });
+      const network = fetch(request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            cache.put(request, response.clone());
+          }
+          return response;
+        })
+        .catch(() => null);
+
+      if (cached) {
+        event.waitUntil(network);
+        return cached;
       }
-      return fetch(event.request).then((networkResponse) => {
-        if (
-          !networkResponse ||
-          networkResponse.status !== 200 ||
-          networkResponse.type !== 'basic'
-        ) {
-          return networkResponse;
-        }
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
-        return networkResponse;
-      }).catch(() => {
-        if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
-      });
+
+      const response = await network;
+      if (response) return response;
+      if (request.mode === 'navigate') return cache.match('./index.html');
+      return Response.error();
     })
   );
 });

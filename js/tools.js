@@ -305,7 +305,7 @@ export class ToolManager {
               startY: world.y,
               originalBounds: { x: el.x, y: el.y, width: el.width, height: el.height }
             };
-            this.resizeInitialElements = this.app.elements.map(e => structuredClone(e));
+            this.resizeInitialElements = null; // snapshotted lazily on first move
             return;
           }
         }
@@ -333,7 +333,7 @@ export class ToolManager {
         if (selEl) offsets.set(id, { dx: selEl.x - world.x, dy: selEl.y - world.y });
       }
       this.dragState = { startX: world.x, startY: world.y, elementOffsets: offsets };
-      this.dragInitialElements = this.app.elements.map(e => structuredClone(e));
+      this.dragInitialElements = null; // snapshotted lazily on first move
     } else {
       if (!shiftKey) this.selectedIds.clear();
       this.selectionRect = { x: world.x, y: world.y, width: 0, height: 0 };
@@ -342,6 +342,13 @@ export class ToolManager {
   }
 
   _selectMove(world) {
+    // Snapshot for undo only once the pointer actually moves (a plain click costs nothing).
+    if (this.resizeState && !this.resizeInitialElements) {
+      this.resizeInitialElements = this._snapshotElements();
+    } else if (this.dragState && !this.dragInitialElements) {
+      this.dragInitialElements = this._snapshotElements();
+    }
+
     if (this.resizeState) {
       const rs = this.resizeState;
       const el = this.app.elements.find(e => e.id === [...this.selectedIds][0]);
@@ -421,6 +428,10 @@ export class ToolManager {
       this.selectionRect = null;
       this.app.dirty = true;
     }
+  }
+
+  _snapshotElements() {
+    return this.app.elements.map(e => structuredClone(e));
   }
 
   // ─── PEN TOOL ─────────────────────────────────────────────
@@ -611,7 +622,7 @@ export class ToolManager {
   // ─── ERASER TOOL ──────────────────────────────────────────
 
   _eraserDown(world) {
-    this.eraserInitialElements = this.app.elements.map(e => structuredClone(e));
+    this.eraserInitialElements = null; // snapshotted lazily before the first removal
     this.erasedAny = false;
     this._eraseAt(world);
   }
@@ -637,6 +648,7 @@ export class ToolManager {
       }
     }
     if (toRemove.length > 0) {
+      if (!this.eraserInitialElements) this.eraserInitialElements = this._snapshotElements();
       this.erasedAny = true;
       for (const id of toRemove) this.app.removeElement(id);
       this.app.dirty = true;

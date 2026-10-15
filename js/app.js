@@ -10,12 +10,17 @@ export class App {
     this.canvas = null;
     this.renderer = null;
     this.toolManager = null;
-    this.history = new History();
+    this.history = new History(60);
     this.storage = new Storage();
     this.elements = [];
     this.pages = [];
     this.activePage = null;
-    this.dirty = true;
+    this._dirty = false;
+    this._frameRequested = false;
+    this._lastMinimapAt = 0;
+    this._minimapTimer = 0;
+    this._coordsFrame = 0;
+    this._lastStyleEdit = { key: '', at: 0 };
     this.clipboard = [];
     this.contextMenuPos = { x: 0, y: 0 };
     this.minimapVisible = true;
@@ -28,6 +33,22 @@ export class App {
     };
 
     this._saveDebounced = debounce(() => this._doSave(), 500);
+  }
+
+  // Setting `dirty = true` schedules exactly one frame; nothing runs while idle.
+  get dirty() {
+    return this._dirty;
+  }
+
+  set dirty(value) {
+    this._dirty = !!value;
+    if (this._dirty) this._requestFrame();
+  }
+
+  _requestFrame() {
+    if (this._frameRequested) return;
+    this._frameRequested = true;
+    requestAnimationFrame(() => this._renderLoop());
   }
 
   init() {
@@ -115,11 +136,23 @@ export class App {
     // 8. Start render loop
     this._renderLoop();
 
-    // 9. Handle resize
+    // 9. Handle resize (coalesced to one per frame)
+    let resizeQueued = false;
     window.addEventListener('resize', () => {
-      this.renderer.resize();
-      this.dirty = true;
+      if (resizeQueued) return;
+      resizeQueued = true;
+      requestAnimationFrame(() => {
+        resizeQueued = false;
+        this.renderer.resize();
+        this.dirty = true;
+      });
     });
+
+    // 10. Flush pending saves when the window is hidden or closed
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this._flushSave();
+    });
+    window.addEventListener('pagehide', () => this._flushSave());
 
     console.log('Fleck drawing app initialized successfully ✨');
   }
@@ -127,17 +160,33 @@ export class App {
   // ─── Render Loop ──────────────────────────────────────────
 
   _renderLoop() {
-    if (this.dirty) {
-      this.renderer.render(
-        this.elements,
-        this.toolManager.selectedIds,
-        this.toolManager.selectionRect,
-        this.toolManager.currentElement
-      );
+    this._frameRequested = false;
+    if (!this._dirty) return;
+    this._dirty = false;
+
+    this.renderer.render(
+      this.elements,
+      this.toolManager.selectedIds,
+      this.toolManager.selectionRect,
+      this.toolManager.currentElement
+    );
+    this._scheduleMinimap();
+  }
+
+  // The minimap walks every element, so refresh it at most ~7 times a second.
+  _scheduleMinimap() {
+    if (!this.minimapVisible || !this.minimapCtx) return;
+    const wait = 150 - (performance.now() - this._lastMinimapAt);
+    if (wait <= 0) {
+      this._lastMinimapAt = performance.now();
       this.updateMinimap();
-      this.dirty = false;
+    } else if (!this._minimapTimer) {
+      this._minimapTimer = setTimeout(() => {
+        this._minimapTimer = 0;
+        this._lastMinimapAt = performance.now();
+        this.updateMinimap();
+      }, wait);
     }
-    requestAnimationFrame(() => this._renderLoop());
   }
 
   // ─── Minimap ──────────────────────────────────────────────
@@ -356,6 +405,7 @@ export class App {
         this.minimapVisible = !this.minimapVisible;
         minimapCard.style.display = this.minimapVisible ? 'block' : 'none';
         if (this.minimapVisible) {
+          this._lastMinimapAt = 0;
           this.dirty = true;
         }
       });
@@ -370,24 +420,6 @@ export class App {
   }
 
   bindProperties() {
-    const propertiesPanel = document.getElementById('properties-section');
-    const styleSettingsBtn = document.getElementById('btn-style-settings');
-    const closeStyleSettingsBtn = document.getElementById('btn-close-style-settings');
-    const setStylePanelVisibility = (visible) => {
-      if (propertiesPanel) propertiesPanel.hidden = !visible;
-      if (styleSettingsBtn) {
-        styleSettingsBtn.classList.toggle('active', visible);
-        styleSettingsBtn.setAttribute('aria-expanded', visible ? 'true' : 'false');
-      }
-    };
-
-    if (styleSettingsBtn) styleSettingsBtn.addEventListener('click', () => {
-      setStylePanelVisibility(propertiesPanel?.hidden);
-    });
-    if (closeStyleSettingsBtn) closeStyleSettingsBtn.addEventListener('click', () => {
-      setStylePanelVisibility(false);
-    });
-
     // Stroke color picker
     const strokePicker = document.getElementById('stroke-color-picker') || document.getElementById('stroke-color');
     const strokeIndicator = document.getElementById('stroke-color-indicator');
@@ -521,7 +553,12 @@ export class App {
   _updateSelectedElementsStyle(props) {
     if (this.toolManager.selectedIds.size > 0) {
       let changed = false;
-      this.history.push(this.elements);
+      // Dragging a color picker fires dozens of events; keep one undo step per burst.
+      const key = `${[...this.toolManager.selectedIds].join(',')}|${Object.keys(props).join(',')}`;
+      const now = performance.now();
+      const coalesce = key === this._lastStyleEdit.key && now - this._lastStyleEdit.at < 800;
+      this._lastStyleEdit = { key, at: now };
+      if (!coalesce) this.history.push(this.elements);
       for (const id of this.toolManager.selectedIds) {
         const el = this.elements.find(e => e.id === id);
         if (el) {
@@ -532,7 +569,7 @@ export class App {
       if (changed) {
         this.dirty = true;
         this.saveState();
-      } else {
+      } else if (!coalesce) {
         this.history.undoStack.pop();
       }
     }
@@ -890,7 +927,7 @@ export class App {
             e.preventDefault();
             return;
           case 's':
-            this._doSave();
+            this._flushSave();
             e.preventDefault();
             return;
           case 'e':
@@ -1058,19 +1095,29 @@ export class App {
     this._saveDebounced();
   }
 
-  _doSave() {
+  _flushSave() {
+    this._saveDebounced.cancel();
+    this._doSave(true);
+  }
+
+  _doSave(immediate = false) {
     if (this.activePage) {
       this.activePage.elements = this.elements;
       this.activePage.camera = { ...this.renderer.camera };
       this.activePage.updatedAt = Date.now();
     }
 
-    this.storage.save({
+    const payload = {
       pages: this.pages,
       activePageId: this.activePage?.id,
       theme: document.documentElement.getAttribute('data-theme'),
       settings: { ...this.settings }
-    });
+    };
+    if (immediate) {
+      this.storage.saveImmediate(payload);
+    } else {
+      this.storage.save(payload);
+    }
   }
 
   exportPNG() {
@@ -1189,6 +1236,18 @@ export class App {
   }
 
   updateCoords(x, y) {
+    if (this._coordsFrame) {
+      this._pendingCoords = { x, y };
+      return;
+    }
+    this._pendingCoords = { x, y };
+    this._coordsFrame = requestAnimationFrame(() => {
+      this._coordsFrame = 0;
+      this._writeCoords(this._pendingCoords.x, this._pendingCoords.y);
+    });
+  }
+
+  _writeCoords(x, y) {
     const coordX = document.getElementById('coord-x');
     const coordY = document.getElementById('coord-y');
     if (coordX && coordY) {
