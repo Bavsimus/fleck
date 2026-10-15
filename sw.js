@@ -1,5 +1,5 @@
 // Service Worker for Fleck - Complete offline capability
-const CACHE_NAME = 'fleck-v5';
+const CACHE_NAME = 'fleck-v6';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

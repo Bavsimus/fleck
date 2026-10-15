@@ -1,9 +1,11 @@
 {
+  "id": "./",
   "name": "Fleck — Visual Notes & Sketchpad",
   "short_name": "Fleck",
   "description": "Drawing-first visual notes and infinite canvas sketchpad similar to Excalidraw.",
   "start_url": "./index.html",
   "scope": "./",
+  "display_override": ["window-controls-overlay", "standalone"],
   "display": "standalone",
   "orientation": "any",
   "background_color": "#18191c",
@@ -11,7 +13,13 @@
   "icons": [
     {
       "src": "./icon.svg",
-      "sizes": "any",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon.svg",
+      "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }

@@ -52,13 +52,17 @@ Simply deploy or push this repository to GitHub and enable **GitHub Pages** (Set
 
 ---
 
+> **Important:** PWA installation and service workers require HTTPS in production. `localhost` is also treated as secure for local testing.
+
 ## 📱 Installing as an App (PWA)
 
 - **iPhone / iPad (Safari)**: Tap the **Share** button (`⎋`) and choose **"Add to Home Screen"**.
 - **Android (Chrome)**: Tap the three dots menu (`⋮`) and select **"Install app"** or **"Add to Home screen"**.
 - **Mac / Windows / Linux (Chrome or Edge)**: Click the install icon in the address bar or select **"Install Fleck"** from the browser menu.
 
-Once installed, Fleck opens in a distraction-free standalone window and works completely offline without an internet connection.
+On Windows, open the deployed HTTPS address in Edge or Chrome, then choose **Install Fleck**. The result is a lightweight standalone window with a Start Menu/taskbar shortcut; it uses the browser's existing web engine rather than bundling a second copy of Chromium.
+
+Once installed, Fleck opens in a distraction-free standalone window and works completely offline without an internet connection. The current app stores notes in browser-local storage, so data is **not yet synchronized between devices**. Cross-device synchronization requires adding an authenticated cloud API and a shared database; installing the PWA alone does not provide that.
 
 ---
 
