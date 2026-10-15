@@ -244,7 +244,14 @@
   </aside>
 
   <!-- ================= STYLE PANEL ================= -->
-  <section class="properties-section" id="properties-section" aria-label="Element Properties">
+  <button type="button" class="style-fab" id="btn-style-settings" data-tooltip="Style Settings" aria-label="Toggle style settings" aria-expanded="false" aria-controls="properties-section">
+    <span class="style-fab-swatch" id="style-fab-swatch"></span>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="13.5" cy="6.5" r="1.5"></circle><circle cx="17.5" cy="10.5" r="1.5"></circle><circle cx="8.5" cy="7.5" r="1.5"></circle><circle cx="6.5" cy="12.5" r="1.5"></circle>
+      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4.9-4.5-9-10-9z"></path>
+    </svg>
+  </button>
+  <section class="properties-section" id="properties-section" aria-label="Element Properties" hidden>
         <div class="properties-header">
           <span class="properties-title">Style Settings</span>
         </div>

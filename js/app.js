@@ -420,6 +420,21 @@ export class App {
   }
 
   bindProperties() {
+    const propertiesPanel = document.getElementById('properties-section');
+    const styleFab = document.getElementById('btn-style-settings');
+    const setPanel = (open) => {
+      if (propertiesPanel) propertiesPanel.hidden = !open;
+      if (styleFab) {
+        styleFab.classList.toggle('active', open);
+        styleFab.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+      try { localStorage.setItem('fleck_style_panel', open ? '1' : '0'); } catch (_) {}
+    };
+    if (styleFab) styleFab.addEventListener('click', () => setPanel(propertiesPanel?.hidden));
+    let wasOpen = false;
+    try { wasOpen = localStorage.getItem('fleck_style_panel') === '1'; } catch (_) {}
+    setPanel(wasOpen);
+
     // Stroke color picker
     const strokePicker = document.getElementById('stroke-color-picker') || document.getElementById('stroke-color');
     const strokeIndicator = document.getElementById('stroke-color-indicator');
@@ -515,6 +530,8 @@ export class App {
     if (strokeIndicator) {
       strokeIndicator.style.backgroundColor = color;
     }
+    const fabSwatch = document.getElementById('style-fab-swatch');
+    if (fabSwatch) fabSwatch.style.backgroundColor = color;
 
     this._updateSelectedElementsStyle({ strokeColor: color });
     this.saveState();
@@ -1189,6 +1206,8 @@ export class App {
     if (strokeIndicator) {
       strokeIndicator.style.backgroundColor = this.settings.strokeColor;
     }
+    const fabSwatch = document.getElementById('style-fab-swatch');
+    if (fabSwatch) fabSwatch.style.backgroundColor = this.settings.strokeColor;
 
     if (this.settings.fillColor === 'transparent') {
       if (fillTransparentBtn) fillTransparentBtn.classList.add('active');
