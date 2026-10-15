@@ -635,12 +635,45 @@ html[data-theme='dark'] .theme-toggle .icon-moon {
    6. Properties & Style Controls Section
    -------------------------------------------------------------------------- */
 .properties-section {
+  position: fixed;
+  top: calc(var(--toolbar-height) + 10px);
+  left: 76px;
+  z-index: var(--z-sidebar);
+  width: 220px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  padding: 12px;
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  animation: propertiesPanelIn 140ms ease-out;
+}
+.properties-section[hidden] {
+  display: none;
+}
+@keyframes propertiesPanelIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.properties-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
-  padding: 4px 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.properties-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
 }
 
 .property-item {
@@ -763,8 +796,8 @@ html[data-theme='dark'] .transparent-pattern {
   border-color: var(--accent);
 }
 
-/* Slider Controls (Custom input range styling) */
-.slider-item {
+/* Fixed Property Options */
+.option-item {
   width: 100%;
 }
 .slider-val {
@@ -773,47 +806,63 @@ html[data-theme='dark'] .transparent-pattern {
   font-weight: 600;
   color: var(--text-muted);
 }
-.slider-wrapper {
+.option-buttons {
   width: 100%;
-  padding: 0 4px;
   display: flex;
-  justify-content: center;
+  gap: 2px;
 }
-.range-slider {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 38px;
-  height: 4px;
-  background: var(--border);
+.option-btn {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  background: var(--surface-solid);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+.option-btn:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+.option-btn.active {
+  border-color: var(--accent);
+  background: rgba(59, 130, 246, 0.16);
+}
+.width-option span {
+  display: block;
+  width: 20px;
+  height: var(--option-width);
+  margin: auto;
   border-radius: var(--radius-full);
-  outline: none;
-  cursor: pointer;
-  transition: background var(--transition-fast);
+  background: currentColor;
 }
-.range-slider::-webkit-slider-thumb {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+.width-option:nth-child(1) span { --option-width: 1px; }
+.width-option:nth-child(2) span { --option-width: 2px; }
+.width-option:nth-child(3) span { --option-width: 4px; }
+.width-option:nth-child(4) span { --option-width: 6px; }
+.width-option:nth-child(5) span { --option-width: 10px; }
+.opacity-option span {
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin: auto;
   border-radius: 50%;
   background: var(--accent);
-  cursor: pointer;
-  border: 1.5px solid var(--surface-solid);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  transition: transform var(--transition-fast), background-color var(--transition-fast);
 }
-.range-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.25);
-  background: var(--accent-hover);
+.opacity-option:nth-child(1) span { opacity: 0.2; }
+.opacity-option:nth-child(2) span { opacity: 0.4; }
+.opacity-option:nth-child(3) span { opacity: 0.6; }
+.opacity-option:nth-child(4) span { opacity: 0.8; }
+.opacity-option:nth-child(5) span { opacity: 1; }
+.option-btn.active span {
+  color: var(--accent);
 }
-.range-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--accent);
+/* Retained for legacy markup compatibility. */
+.range-slider {
   cursor: pointer;
-  border: 1.5px solid var(--surface-solid);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 /* --------------------------------------------------------------------------

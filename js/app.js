@@ -354,6 +354,24 @@ export class App {
   }
 
   bindProperties() {
+    const propertiesPanel = document.getElementById('properties-section');
+    const styleSettingsBtn = document.getElementById('btn-style-settings');
+    const closeStyleSettingsBtn = document.getElementById('btn-close-style-settings');
+    const setStylePanelVisibility = (visible) => {
+      if (propertiesPanel) propertiesPanel.hidden = !visible;
+      if (styleSettingsBtn) {
+        styleSettingsBtn.classList.toggle('active', visible);
+        styleSettingsBtn.setAttribute('aria-expanded', visible ? 'true' : 'false');
+      }
+    };
+
+    if (styleSettingsBtn) styleSettingsBtn.addEventListener('click', () => {
+      setStylePanelVisibility(propertiesPanel?.hidden);
+    });
+    if (closeStyleSettingsBtn) closeStyleSettingsBtn.addEventListener('click', () => {
+      setStylePanelVisibility(false);
+    });
+
     // Stroke color picker
     const strokePicker = document.getElementById('stroke-color-picker') || document.getElementById('stroke-color');
     const strokeIndicator = document.getElementById('stroke-color-indicator');
@@ -405,36 +423,32 @@ export class App {
       });
     });
 
-    // Stroke width slider
-    const strokeWidthSlider = document.getElementById('stroke-width-slider') || document.getElementById('stroke-width');
+    // Stroke width options
     const strokeWidthBadge = document.getElementById('stroke-width-badge') || document.getElementById('stroke-width-val');
-
-    if (strokeWidthSlider) {
-      strokeWidthSlider.value = this.settings.strokeWidth;
-      strokeWidthSlider.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value, 10);
+    document.querySelectorAll('#stroke-width-options .option-btn').forEach((button) => {
+      button.addEventListener('click', () => {
+        const val = parseInt(button.dataset.value, 10);
         this.settings.strokeWidth = val;
         if (strokeWidthBadge) strokeWidthBadge.textContent = `${val}px`;
         this._updateSelectedElementsStyle({ strokeWidth: val });
+        this.updateStyleUI();
         this.saveState();
       });
-    }
+    });
 
-    // Opacity slider
-    const opacitySlider = document.getElementById('opacity-slider') || document.getElementById('opacity');
+    // Opacity options
     const opacityBadge = document.getElementById('opacity-badge') || document.getElementById('opacity-val');
-
-    if (opacitySlider) {
-      opacitySlider.value = Math.round(this.settings.opacity * 100);
-      opacitySlider.addEventListener('input', (e) => {
-        const pct = parseInt(e.target.value, 10);
+    document.querySelectorAll('#opacity-options .option-btn').forEach((button) => {
+      button.addEventListener('click', () => {
+        const pct = parseInt(button.dataset.value, 10);
         const val = pct / 100;
         this.settings.opacity = val;
         if (opacityBadge) opacityBadge.textContent = `${pct}%`;
         this._updateSelectedElementsStyle({ opacity: val });
+        this.updateStyleUI();
         this.saveState();
       });
-    }
+    });
   }
 
   setStrokeColor(color) {
@@ -1118,19 +1132,19 @@ export class App {
       }
     }
 
-    if (strokeWidthSlider) {
-      strokeWidthSlider.value = this.settings.strokeWidth;
-    }
     if (strokeWidthBadge) {
       strokeWidthBadge.textContent = `${this.settings.strokeWidth}px`;
     }
+    document.querySelectorAll('#stroke-width-options .option-btn').forEach((button) => {
+      button.classList.toggle('active', parseInt(button.dataset.value, 10) === this.settings.strokeWidth);
+    });
 
-    if (opacitySlider) {
-      opacitySlider.value = Math.round(this.settings.opacity * 100);
-    }
     if (opacityBadge) {
       opacityBadge.textContent = `${Math.round(this.settings.opacity * 100)}%`;
     }
+    document.querySelectorAll('#opacity-options .option-btn').forEach((button) => {
+      button.classList.toggle('active', parseInt(button.dataset.value, 10) === Math.round(this.settings.opacity * 100));
+    });
   }
 
   updateZoomUI() {

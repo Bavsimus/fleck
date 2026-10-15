@@ -28,6 +28,8 @@ export class ToolManager {
     this.spaceHeld = false;
     this.editingElement = null;
     this.editOverlay = null;
+    this.editingElementIsNew = false;
+    this.textEditingInitialElements = null;
     this.lastPointerPos = { x: 0, y: 0 };
 
     // Touch state
@@ -582,8 +584,10 @@ export class ToolManager {
     el.width = 200;
     el.height = 30;
     this.isDrawing = false;
+    this.app.history.push(this.app.elements);
     this.app.addElement(el);
     this.app.dirty = true;
+    this.editingElementIsNew = true;
     this.startTextEditing(el);
   }
 
@@ -597,9 +601,10 @@ export class ToolManager {
     el.strokeColor = 'transparent';
     el.text = '';
     this.isDrawing = false;
-    this.app.addElement(el);
     this.app.history.push(this.app.elements);
+    this.app.addElement(el);
     this.app.dirty = true;
+    this.editingElementIsNew = true;
     this.startTextEditing(el);
   }
 
@@ -643,6 +648,11 @@ export class ToolManager {
   startTextEditing(element) {
     if (this.editingElement) this.stopTextEditing();
     this.editingElement = element;
+    if (!this.editingElementIsNew) {
+      this.textEditingInitialElements = this.app.elements.map(e => structuredClone(e));
+    } else {
+      this.textEditingInitialElements = null;
+    }
 
     const camera = this.app.renderer.camera;
     const screen = worldToScreen(element.x, element.y, camera);
@@ -725,7 +735,9 @@ export class ToolManager {
       }
 
       el.updatedAt = Date.now();
-      this.app.history.push(this.app.elements);
+      if (!this.editingElementIsNew && this.textEditingInitialElements) {
+        this.app.history.push(this.textEditingInitialElements);
+      }
       this.app.saveState();
     } else {
       // Remove empty text elements
@@ -737,6 +749,8 @@ export class ToolManager {
     }
     this.editOverlay = null;
     this.editingElement = null;
+    this.editingElementIsNew = false;
+    this.textEditingInitialElements = null;
     this.app.dirty = true;
   }
 
@@ -767,8 +781,8 @@ export class ToolManager {
   }
 
   finalizeElement(element) {
-    this.app.addElement(element);
     this.app.history.push(this.app.elements);
+    this.app.addElement(element);
     this.app.saveState();
     this.app.dirty = true;
   }

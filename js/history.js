@@ -26,9 +26,9 @@ function cloneState(obj) {
  */
 export class History {
   /**
-   * @param {number} [maxStackSize=50] Maximum number of undo states to keep.
+   * @param {number} [maxStackSize=200] Maximum number of undo states to keep.
    */
-  constructor(maxStackSize = 50) {
+  constructor(maxStackSize = 200) {
     this.maxStackSize = maxStackSize;
     /** @type {Array<Array<object>>} */
     this.undoStack = [];

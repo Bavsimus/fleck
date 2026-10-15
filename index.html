@@ -152,8 +152,8 @@
     </div>
   </header>
 
-  <!-- ================= LEFT SIDEBAR (TOOLS & PROPERTIES) ================= -->
-  <aside class="left-sidebar" id="left-sidebar" role="region" aria-label="Drawing Tools and Properties">
+  <!-- ================= LEFT SIDEBAR (TOOLS) ================= -->
+  <aside class="left-sidebar" id="left-sidebar" role="region" aria-label="Drawing Tools">
     <div class="sidebar-inner">
       <!-- Drawing Tools Group -->
       <nav class="tools-group" role="toolbar" aria-label="Drawing Tools">
@@ -241,9 +241,26 @@
       </nav>
 
       <div class="sidebar-divider"></div>
+      <button type="button" class="tool-btn settings-tool-btn active" id="btn-style-settings" data-tooltip="Style Settings" aria-label="Toggle style settings" aria-expanded="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"></path>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.5 1.5-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20h-2.12v-.09a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-1.5-1.5.06-.06A1.7 1.7 0 0 0 9.14 15a1.7 1.7 0 0 0-1.56-1.03H7.5v-2.12h.08A1.7 1.7 0 0 0 9.14 10a1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.5-1.5.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56V5h2.12v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.5 1.5-.06.06A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.56 1.03H21v2.12h-.04A1.7 1.7 0 0 0 19.4 15z"></path>
+        </svg>
+      </button>
+
+      <div class="sidebar-divider"></div>
 
       <!-- Properties & Style Controls Section -->
       <section class="properties-section" id="properties-section" aria-label="Element Properties">
+        <div class="properties-header">
+          <span class="properties-title">Style Settings</span>
+          <button type="button" class="btn-icon-xs" id="btn-close-style-settings" aria-label="Close style settings">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
         <!-- Stroke Color Picker -->
         <div class="property-item" data-tooltip="Stroke Color">
           <label class="property-label" for="stroke-color-picker">Stroke</label>
@@ -290,25 +307,33 @@
 
         <div class="sidebar-divider"></div>
 
-        <!-- Stroke Width Slider (1-10) -->
-        <div class="property-item slider-item">
+        <!-- Stroke Width Options -->
+        <div class="property-item option-item">
           <div class="property-header-row">
-            <label class="property-label" for="stroke-width-slider">Width</label>
+            <span class="property-label">Width</span>
             <span class="slider-val" id="stroke-width-badge">2px</span>
           </div>
-          <div class="slider-wrapper">
-            <input type="range" id="stroke-width-slider" class="range-slider" min="1" max="10" step="1" value="2" aria-label="Stroke width">
+          <div class="option-buttons" id="stroke-width-options" role="group" aria-label="Stroke width">
+            <button type="button" class="option-btn width-option" data-value="1" aria-label="1 pixel" title="1 px"><span></span></button>
+            <button type="button" class="option-btn width-option" data-value="2" aria-label="2 pixels" title="2 px"><span></span></button>
+            <button type="button" class="option-btn width-option" data-value="4" aria-label="4 pixels" title="4 px"><span></span></button>
+            <button type="button" class="option-btn width-option" data-value="6" aria-label="6 pixels" title="6 px"><span></span></button>
+            <button type="button" class="option-btn width-option" data-value="10" aria-label="10 pixels" title="10 px"><span></span></button>
           </div>
         </div>
 
-        <!-- Opacity Slider -->
-        <div class="property-item slider-item">
+        <!-- Opacity Options -->
+        <div class="property-item option-item">
           <div class="property-header-row">
-            <label class="property-label" for="opacity-slider">Opacity</label>
+            <span class="property-label">Opacity</span>
             <span class="slider-val" id="opacity-badge">100%</span>
           </div>
-          <div class="slider-wrapper">
-            <input type="range" id="opacity-slider" class="range-slider" min="10" max="100" step="5" value="100" aria-label="Opacity">
+          <div class="option-buttons" id="opacity-options" role="group" aria-label="Opacity">
+            <button type="button" class="option-btn opacity-option" data-value="20" aria-label="20 percent" title="20%"><span></span></button>
+            <button type="button" class="option-btn opacity-option" data-value="40" aria-label="40 percent" title="40%"><span></span></button>
+            <button type="button" class="option-btn opacity-option" data-value="60" aria-label="60 percent" title="60%"><span></span></button>
+            <button type="button" class="option-btn opacity-option" data-value="80" aria-label="80 percent" title="80%"><span></span></button>
+            <button type="button" class="option-btn opacity-option" data-value="100" aria-label="100 percent" title="100%"><span></span></button>
           </div>
         </div>
       </section>
